@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createContainer } from '../src/container.ts'
-import { Layer } from '../src/layer.ts'
+import { Layer } from '../src/index.ts'
 import { tag } from '../src/tag.ts'
 
 describe('createContainer shared dependencies', () => {

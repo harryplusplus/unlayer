@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createContainer } from '../src/container.ts'
-import { Layer } from '../src/layer.ts'
+import { Layer } from '../src/index.ts'
 import { tag } from '../src/tag.ts'
 
 describe('createContainer', () => {
@@ -10,12 +10,12 @@ describe('createContainer', () => {
       const CounterTag = tag<{ count: number }>('Counter')
       let count = 0
 
-      const layer = Layer.factory(CounterTag, [], () => {
+      const counterLayer = Layer.factory(CounterTag, [], () => {
         count++
         return { count }
       })
 
-      const container = createContainer(layer)
+      const container = createContainer(counterLayer)
 
       const instance1 = container.get(CounterTag)
       const instance2 = container.get(CounterTag)
@@ -30,7 +30,7 @@ describe('createContainer', () => {
       const CounterTag = tag<{ count: number }>('Counter')
       let count = 0
 
-      const layer = Layer.factory(
+      const counterLayer = Layer.factory(
         CounterTag,
         [],
         () => {
@@ -40,7 +40,7 @@ describe('createContainer', () => {
         { scope: 'transient' },
       )
 
-      const container = createContainer(layer)
+      const container = createContainer(counterLayer)
 
       const instance1 = container.get(CounterTag)
       const instance2 = container.get(CounterTag)

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createContainer } from '../src/container.ts'
-import { Layer } from '../src/layer.ts'
+import { Layer } from '../src/index.ts'
 import { tag } from '../src/tag.ts'
 
 describe('createContainer dependency resolution', () => {
@@ -49,11 +49,13 @@ describe('createContainer dependency resolution', () => {
     const UserServiceTag = tag<{ getUser: () => void }>('UserService')
     const DatabaseTag = tag<{ find: () => void }>('Database')
 
-    const layer = Layer.factory(UserServiceTag, [DatabaseTag], (db) => ({
-      getUser: () => db.find(),
-    }))
+    const userServiceLayer = Layer.factory(
+      UserServiceTag,
+      [DatabaseTag],
+      (db) => ({ getUser: () => db.find() }),
+    )
 
-    const container = createContainer(layer)
+    const container = createContainer(userServiceLayer)
 
     expect(() => container.get(UserServiceTag)).toThrow(
       'Service not found: Database',

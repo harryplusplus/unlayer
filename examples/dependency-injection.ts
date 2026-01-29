@@ -3,11 +3,14 @@
  *
  * Demonstrates:
  * - Creating services with dependencies using Layer.factory
- * - Chaining multiple dependencies
+ * - Type propagation through dependency chain
+ * - How Layer<Out, In> tracks dependencies
  * - Sharing dependencies across services
  */
 
 import { createContainer, Layer, tag } from '../src/index.ts'
+
+// Type imported for documentation purposes (shown in comments above)
 
 // Define service interfaces
 interface Database {
@@ -37,6 +40,7 @@ const UserRepositoryTag = tag<UserRepository>('UserRepository')
 const UserServiceTag = tag<UserService>('UserService')
 
 // Database layer (no dependencies)
+// Type: Layer<Database, never>
 const DatabaseLive = Layer.value(DatabaseTag, {
   find(id: string) {
     // Simulated database
@@ -49,6 +53,7 @@ const DatabaseLive = Layer.value(DatabaseTag, {
 })
 
 // Cache layer (no dependencies)
+// Type: Layer<Cache, never>
 const CacheLive = Layer.value(CacheTag, {
   get(_key: string) {
     // Simulated cache miss
@@ -61,6 +66,7 @@ const CacheLive = Layer.value(CacheTag, {
 })
 
 // UserRepository depends on Database
+// Type: Layer<UserRepository, Database>
 const UserRepositoryLive = Layer.factory(
   UserRepositoryTag,
   [DatabaseTag],
@@ -75,6 +81,7 @@ const UserRepositoryLive = Layer.factory(
 )
 
 // UserService depends on both UserRepository and Cache
+// Type: Layer<UserService, UserRepository | Cache>
 const UserServiceLive = Layer.factory(
   UserServiceTag,
   [UserRepositoryTag, CacheTag],
@@ -102,12 +109,16 @@ const UserServiceLive = Layer.factory(
 )
 
 // Merge all layers and create container
+// Type: Layer<Database | Cache | UserRepository | UserService, never>
+// All dependencies are satisfied within the merge
 const MainLayer = Layer.merge(
   DatabaseLive,
   CacheLive,
   UserRepositoryLive,
   UserServiceLive,
 )
+
+// Type: TypedContainer<Database | Cache | UserRepository | UserService>
 const container = createContainer(MainLayer)
 
 // Use the service

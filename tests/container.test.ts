@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createContainer } from '../src/container.ts'
-import { Layer } from '../src/layer.ts'
+import { Layer } from '../src/index.ts'
 import { tag } from '../src/tag.ts'
 
 describe('createContainer', () => {
   describe('basic functionality', () => {
     it('should build a container from a layer', () => {
       const ConfigTag = tag<{ timeout: number }>('Config')
-      const layer = Layer.value(ConfigTag, { timeout: 5000 })
+      const configLayer = Layer.value(ConfigTag, { timeout: 5000 })
 
-      const container = createContainer(layer)
+      const container = createContainer(configLayer)
       expect(container).toBeDefined()
       expect(typeof container.get).toBe('function')
       expect(typeof container.dispose).toBe('function')
@@ -18,9 +18,9 @@ describe('createContainer', () => {
 
     it('should resolve services from Layer.value', () => {
       const ConfigTag = tag<{ timeout: number }>('Config')
-      const layer = Layer.value(ConfigTag, { timeout: 5000 })
+      const configLayer = Layer.value(ConfigTag, { timeout: 5000 })
 
-      const container = createContainer(layer)
+      const container = createContainer(configLayer)
       const config = container.get(ConfigTag)
 
       expect(config).toEqual({ timeout: 5000 })
@@ -30,11 +30,11 @@ describe('createContainer', () => {
       const LoggerTag = tag<{ log: (message: string) => void }>('Logger')
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
-      const layer = Layer.factory(LoggerTag, () => ({
+      const loggerLayer = Layer.factory(LoggerTag, () => ({
         log: (message: string) => console.log(message),
       }))
 
-      const container = createContainer(layer)
+      const container = createContainer(loggerLayer)
       const logger = container.get(LoggerTag)
 
       logger.log('test')

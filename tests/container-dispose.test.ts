@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { createContainer } from '../src/container.ts'
-import { Layer } from '../src/layer.ts'
+import { Layer } from '../src/index.ts'
 import { tag } from '../src/tag.ts'
 
 describe('createContainer dispose', () => {
@@ -9,7 +9,7 @@ describe('createContainer dispose', () => {
     const DatabaseTag = tag<{ close: () => Promise<void> }>('Database')
     const closeSpy = vi.fn()
 
-    const layer = Layer.factory(
+    const databaseLayer = Layer.factory(
       DatabaseTag,
       [],
       () => ({ close: async () => {} }),
@@ -21,7 +21,7 @@ describe('createContainer dispose', () => {
       },
     )
 
-    const container = createContainer(layer)
+    const container = createContainer(databaseLayer)
     container.get(DatabaseTag)
 
     await container.dispose()
@@ -77,9 +77,9 @@ describe('createContainer dispose', () => {
   it('should handle service without dispose callback', async () => {
     const ServiceTag = tag<{ name: string }>('Service')
 
-    const layer = Layer.factory(ServiceTag, [], () => ({ name: 'test' }))
+    const serviceLayer = Layer.factory(ServiceTag, [], () => ({ name: 'test' }))
 
-    const container = createContainer(layer)
+    const container = createContainer(serviceLayer)
     container.get(ServiceTag)
 
     await expect(container.dispose()).resolves.toBeUndefined()

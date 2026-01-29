@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createContainer } from '../src/container.ts'
-import { Layer } from '../src/layer.ts'
+import { Layer } from '../src/index.ts'
 import { tag } from '../src/tag.ts'
 
 describe('createContainer', () => {
@@ -30,7 +30,12 @@ describe('createContainer', () => {
 
       const container = createContainer(mergedLayer)
 
-      expect(() => container.get(ConfigTag)).not.toThrow()
+      // Type assertion needed because allowDuplicates loses type information
+      expect(() =>
+        (container.get as <T>(tag: { name: string }) => T)<{ timeout: number }>(
+          ConfigTag,
+        ),
+      ).not.toThrow()
     })
 
     it('should allow duplicate tags with spread option', () => {
@@ -44,7 +49,12 @@ describe('createContainer', () => {
 
       const container = createContainer(mergedLayer)
 
-      expect(() => container.get(ConfigTag)).not.toThrow()
+      // Type assertion needed because allowDuplicates loses type information
+      expect(() =>
+        (container.get as <T>(tag: { name: string }) => T)<{ timeout: number }>(
+          ConfigTag,
+        ),
+      ).not.toThrow()
     })
   })
 })

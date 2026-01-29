@@ -35,8 +35,12 @@
 // Type definitions
 export type {
   Container,
+  GetIn,
+  GetOut,
   LayerOptions,
+  MergeIn,
   MergeOptions,
+  MergeOut,
   Scope,
   Tag,
 } from './types.ts'
@@ -44,8 +48,9 @@ export type {
 // Tag creation
 export { tag } from './tag.ts'
 
-// Layer namespace (includes Layer type)
-export { getLayerImpl, Layer } from './layer.ts'
+// Layer (type and namespace)
+export { Layer } from './layer.ts'
+export { getLayerImpl } from './layer.ts'
 
 // Container creation
 export { createContainer } from './container.ts'

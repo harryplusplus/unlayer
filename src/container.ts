@@ -19,10 +19,22 @@ interface DependencyGraph {
 type LayerImpl = ReturnType<typeof getLayerImpl>
 
 /**
- * Create a container from a layer
+ * Create a container from a typed layer
+ * @example
+ * const container = createContainer(
+ *   Layer.merge(DatabaseLive, UserServiceLive)
+ * )
+ * // container.get(UserServiceTag) - type-safe!
+ * // container.get(DatabaseTag) - type-safe!
  */
-export function createContainer(layer: Layer): Container {
-  const impl = getLayerImpl(layer)
+export function createContainer<Services>(
+  layer: Layer<Services, unknown>,
+): Container<Services>
+
+export function createContainer<Services>(
+  layer: Layer<Services, unknown>,
+): Container<Services> {
+  const impl = getLayerImpl(layer as Layer)
   const graph = buildGraph(impl)
   topologicalSort(graph)
 
@@ -46,7 +58,7 @@ export function createContainer(layer: Layer): Container {
   const singletons = new Map<string, unknown>()
 
   return {
-    get<T>(tag: Tag<T>): T {
+    get<T extends Services>(tag: Tag<T>): T {
       const existing = services.get(tag.name)
       if (existing && existing.scope === 'singleton') {
         return existing.instance as T
@@ -72,7 +84,7 @@ export function createContainer(layer: Layer): Container {
       services.clear()
       singletons.clear()
     },
-  }
+  } as Container<Services>
 }
 
 function createService(

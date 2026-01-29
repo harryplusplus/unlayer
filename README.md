@@ -4,11 +4,37 @@ A type-safe dependency injection container inspired by Effect.ts Layer system.
 
 ## Features
 
-- **Type-safe** - Fully typed service identifiers and dependencies
+- **Compile-time type safety** - `container.get()` only allows services that registered in the container
 - **Layer-based** - Compose your application with layers
 - **Scoped services** - Singleton (default) or transient scope
 - **Resource disposal** - Automatic cleanup with dispose callbacks
 - **Lightweight** - No dependencies
+
+## Type Safety
+
+The core feature is **compile-time type safety** - you cannot use services that aren't registered in the container:
+
+```typescript
+import { tag, Layer, createContainer } from 'unlayer'
+
+interface Database {
+  find(id: string): Promise<User | null>
+}
+
+const DatabaseTag = tag<Database>('Database')
+const LoggerTag = tag<{ log(msg: string): void }>('Logger')
+
+const container = createContainer(
+  Layer.value(DatabaseTag, new Database())
+)
+
+// ✅ Works - Database is in the container
+const db = container.get(DatabaseTag)
+
+// ❌ Compile-time error - Logger is NOT in the container
+// const logger = container.get(LoggerTag)
+// Error: Argument of type 'Tag<{ log(msg: string): void }>' is not assignable to parameter of type 'Tag<Database>'
+```
 
 ## Installation
 
@@ -28,34 +54,35 @@ interface Database {
   find(id: string): Promise<User | null>
 }
 
-interface UserService {
-  getUser(id: string): Promise<User | null>
+interface Logger {
+  log(msg: string): void
 }
 
 // Create type-safe tags
 const DatabaseTag = tag<Database>('Database')
-const UserServiceTag = tag<UserService>('UserService')
+const LoggerTag = tag<Logger>('Logger')
 
 // Define layers
 const DatabaseLive = Layer.value(DatabaseTag, new Database())
 
-const UserServiceLive = Layer.factory(
-  UserServiceTag,
+const LoggerLive = Layer.factory(
+  LoggerTag,
   [DatabaseTag], // dependencies
   (db) => ({
-    async getUser(id: string) {
-      return db.find(id)
+    log(msg: string) {
+      const user = db.find('1')
+      console.log(`[${msg}]`, user)
     }
   })
 )
 
 // Create container and use services
 const container = createContainer(
-  Layer.merge(DatabaseLive, UserServiceLive)
+  Layer.merge(DatabaseLive, LoggerLive)
 )
 
-const userService = container.get(UserServiceTag)
-await userService.getUser('1')
+const logger = container.get(LoggerTag)
+logger.log('Starting application')
 
 // Clean up
 await container.dispose()
@@ -141,14 +168,14 @@ const DatabaseLive = Layer.factory(
 const MainLayer = Layer.merge(
   ConfigLive,
   DatabaseLive,
-  UserServiceLive,
+  LoggerLive,
 )
 
 // Array syntax
 const MainLayer = Layer.merge([
   ConfigLive,
   DatabaseLive,
-  UserServiceLive,
+  LoggerLive,
 ])
 
 // With options
@@ -156,6 +183,27 @@ const MainLayer = Layer.merge(layers, {
   allowDuplicates: true,
 })
 ```
+
+### Duplicate Tags
+
+By default, merging layers with the same tag will throw an error. Use `allowDuplicates: true` to allow the last layer to win:
+
+```typescript
+const DatabaseTag = tag<Database>('Database')
+
+const db1 = Layer.value(DatabaseTag, dbInstance1)
+const db2 = Layer.value(DatabaseTag, dbInstance2)
+
+// ❌ Throws: Duplicate tag detected: Database
+Layer.merge(db1, db2)
+
+// ✅ Allows duplicates - db2 wins
+const MainLayer = Layer.merge(db1, db2, {
+  allowDuplicates: true,
+})
+```
+
+**Note:** When using `allowDuplicates`, type information is lost (`Layer<never, never>`) since duplicate tags cannot be statically tracked.
 
 ## Examples
 

@@ -4,10 +4,17 @@
  * Demonstrates:
  * - Organizing layers by domain/feature
  * - Reusing layer combinations
+ * - Type composition through layer merging
  * - Overriding layers for testing
+ *
+ * Each merge operation composes types:
+ * - Out types are combined with union (A | B)
+ * - In types exclude satisfied dependencies
  */
 
 import { createContainer, Layer, tag } from '../src/index.ts'
+
+// Type imported for documentation purposes (shown in comments above)
 
 // ============================================
 // Domain Layer: Config
@@ -19,11 +26,13 @@ interface Config {
 
 const ConfigTag = tag<Config>('Config')
 
+// Type: Layer<Config, never>
 const ConfigDev = Layer.value(ConfigTag, {
   port: 3000,
   dbUrl: 'localhost:5432',
 })
 
+// Type: Layer<Config, never>
 const ConfigProd = Layer.value(ConfigTag, {
   port: 80,
   dbUrl: 'prod-db.example.com',
@@ -38,6 +47,7 @@ interface Database {
 
 const DatabaseTag = tag<Database>('Database')
 
+// Type: Layer<Database, Config>
 const DatabaseLive = Layer.factory(DatabaseTag, [ConfigTag], (config) => ({
   query(sql: string) {
     console.log(`[DB] Connecting to ${config.dbUrl}`)
@@ -60,12 +70,14 @@ interface UserService {
 const LoggerTag = tag<Logger>('Logger')
 const UserServiceTag = tag<UserService>('UserService')
 
+// Type: Layer<Logger, never>
 const LoggerLive = Layer.value(LoggerTag, {
   log(message: string) {
     console.log(`[LOG] ${message}`)
   },
 })
 
+// Type: Layer<UserService, Database | Logger>
 const UserServiceLive = Layer.factory(
   UserServiceTag,
   [DatabaseTag, LoggerTag],
@@ -82,10 +94,16 @@ const UserServiceLive = Layer.factory(
 // ============================================
 
 // Compose a base application layer
+// Type: Layer<Database | UserService | Logger, Config>
+// Note: Config is in the In type because Database requires it, but Config is NOT provided
 const AppBaseLayer = Layer.merge(DatabaseLive, UserServiceLive, LoggerLive)
 
 // Create environment-specific layers
+// Type: Layer<Config | Database | UserService | Logger, never>
+// Config is now provided, so all dependencies are satisfied
 const DevLayer = Layer.merge(AppBaseLayer, ConfigDev)
+
+// Type: Layer<Config | Database | UserService | Logger, never>
 const ProdLayer = Layer.merge(AppBaseLayer, ConfigProd)
 
 // ============================================
@@ -123,6 +141,9 @@ const TestLayer = Layer.merge([AppBaseLayer, MockDatabase], {
 })
 
 const testContainer = createContainer(TestLayer)
-const testUserService = testContainer.get(UserServiceTag)
+// Type assertion needed because allowDuplicates loses type information
+const testUserService = (
+  testContainer.get as <T>(tag: { name: string }) => T
+)<UserService>(UserServiceTag)
 await testUserService.findUser('1')
 await testContainer.dispose()

@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { createContainer } from '../src/container.ts'
-import { Layer } from '../src/layer.ts'
+import { Layer } from '../src/index.ts'
 import { tag } from '../src/tag.ts'
 
 describe('Type inference without as const - single dependency', () => {
@@ -26,12 +26,12 @@ describe('Type inference without as const - single dependency', () => {
     const DatabaseTag = tag<Database>('Database')
 
     // No 'as const' - const type parameter handles inference
-    const layer = Layer.factory(DatabaseTag, [ConfigTag], (config) => ({
+    const databaseLayer = Layer.factory(DatabaseTag, [ConfigTag], (config) => ({
       getConfig: () => config,
     }))
 
     const container = createContainer(
-      Layer.merge(Layer.value(ConfigTag, { port: 3000 }), layer),
+      Layer.merge(Layer.value(ConfigTag, { port: 3000 }), databaseLayer),
     )
     const db = container.get(DatabaseTag)
 
@@ -59,7 +59,7 @@ describe('Type inference without as const - two dependencies', () => {
     const ServiceTag = tag<Service>('Service')
 
     // No 'as const' - const type parameter handles inference
-    const layer = Layer.factory(
+    const serviceLayer = Layer.factory(
       ServiceTag,
       [DatabaseTag, LoggerTag],
       (db, logger) => ({
@@ -74,7 +74,7 @@ describe('Type inference without as const - two dependencies', () => {
       Layer.merge(
         Layer.value(DatabaseTag, { query: () => 'result' }),
         Layer.value(LoggerTag, { log: () => {} }),
-        layer,
+        serviceLayer,
       ),
     )
     const service = container.get(ServiceTag)
@@ -108,7 +108,7 @@ describe('Type inference without as const - three dependencies', () => {
     const UserServiceTag = tag<UserService>('UserService')
 
     // No 'as const' - const type parameter handles inference
-    const layer = Layer.factory(
+    const userServiceLayer = Layer.factory(
       UserServiceTag,
       [ConfigTag, DatabaseTag, CacheTag],
       (_config, db, cache) => ({
@@ -127,7 +127,7 @@ describe('Type inference without as const - three dependencies', () => {
         Layer.value(ConfigTag, { apiUrl: 'http://localhost' }),
         Layer.value(DatabaseTag, { find: () => 'user-1' }),
         Layer.value(CacheTag, { get: () => null }),
-        layer,
+        userServiceLayer,
       ),
     )
     const userService = container.get(UserServiceTag)
@@ -146,7 +146,7 @@ describe('Type inference without as const - four dependencies', () => {
     const ServiceTag = tag<{ combine: () => string }>('Service')
 
     // No 'as const' - const type parameter handles inference
-    const layer = Layer.factory(
+    const serviceLayer = Layer.factory(
       ServiceTag,
       [Tag1, Tag2, Tag3, Tag4],
       (t1, t2, t3, t4) => ({
@@ -162,7 +162,7 @@ describe('Type inference without as const - four dependencies', () => {
         Layer.value(Tag2, { b: 42 }),
         Layer.value(Tag3, { c: true }),
         Layer.value(Tag4, { d: 'date' }),
-        layer,
+        serviceLayer,
       ),
     )
 
@@ -190,7 +190,7 @@ describe('Type inference without as const - type safety', () => {
     )
 
     // No 'as const' - const type parameter handles inference
-    const layer = Layer.factory(ServiceTag, [TagA, TagB], (a, b) => ({
+    const serviceLayer = Layer.factory(ServiceTag, [TagA, TagB], (a, b) => ({
       useA: () => a.aMethod(),
       useB: () => b.bMethod(),
     }))
@@ -199,7 +199,7 @@ describe('Type inference without as const - type safety', () => {
       Layer.merge(
         Layer.value(TagA, { aMethod: () => 'a' }),
         Layer.value(TagB, { bMethod: () => 1 }),
-        layer,
+        serviceLayer,
       ),
     )
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { getLayerImpl, Layer } from '../src/layer.ts'
+import { Layer } from '../src/index.ts'
+import { getLayerImpl } from '../src/layer.ts'
 import { tag } from '../src/tag.ts'
 
 describe('Layer', () => {
@@ -9,9 +10,9 @@ describe('Layer', () => {
       const ConfigTag = tag<{ apiUrl: string; timeout: number }>('Config')
 
       const config = { apiUrl: 'https://api.example.com', timeout: 5000 }
-      const layer = Layer.value(ConfigTag, config)
+      const configLayer = Layer.value(ConfigTag, config)
 
-      const impl = getLayerImpl(layer)
+      const impl = getLayerImpl(configLayer)
       expect(impl.isValue()).toBe(true)
       expect(impl.value).toBe(config)
     })
@@ -22,11 +23,11 @@ describe('Layer.factory without dependencies', () => {
   it('should create a layer with factory function', () => {
     const LoggerTag = tag<{ log: (message: string) => void }>('Logger')
 
-    const layer = Layer.factory(LoggerTag, () => ({
+    const loggerLayer = Layer.factory(LoggerTag, () => ({
       log: (message: string) => console.log(message),
     }))
 
-    const impl = getLayerImpl(layer)
+    const impl = getLayerImpl(loggerLayer)
     expect(impl.isFactory()).toBe(true)
     expect(impl.dependencies).toEqual([])
   })
@@ -42,7 +43,7 @@ describe('Layer.factory with dependencies', () => {
       'UserService',
     )
 
-    const layer = Layer.factory(
+    const userServiceLayer = Layer.factory(
       UserServiceTag,
       [DatabaseTag, CacheTag],
 
@@ -55,7 +56,7 @@ describe('Layer.factory with dependencies', () => {
       }),
     )
 
-    const impl = getLayerImpl(layer)
+    const impl = getLayerImpl(userServiceLayer)
     expect(impl.isFactory()).toBe(true)
     expect(impl.dependencies).toEqual([DatabaseTag, CacheTag])
     expect(impl.tag).toBe(UserServiceTag)
@@ -69,13 +70,17 @@ describe('Layer.factory with dependencies', () => {
       'UserService',
     )
 
-    const layer = Layer.factory(UserServiceTag, [DatabaseTag], (db) => ({
-      getUser: async (id: string) => {
-        return db.find(id)
-      },
-    }))
+    const userServiceLayer = Layer.factory(
+      UserServiceTag,
+      [DatabaseTag],
+      (db) => ({
+        getUser: async (id: string) => {
+          return db.find(id)
+        },
+      }),
+    )
 
-    const impl = getLayerImpl(layer)
+    const impl = getLayerImpl(userServiceLayer)
     expect(impl.isFactory()).toBe(true)
   })
 })
@@ -84,7 +89,7 @@ describe('Layer.factory dispose option', () => {
   it('should support dispose option', () => {
     const DatabaseTag = tag<{ close: () => Promise<void> }>('Database')
 
-    const layer = Layer.factory(
+    const databaseLayer = Layer.factory(
       DatabaseTag,
       [],
       () => ({ close: async () => {} }),
@@ -95,7 +100,7 @@ describe('Layer.factory dispose option', () => {
       },
     )
 
-    const impl = getLayerImpl(layer)
+    const impl = getLayerImpl(databaseLayer)
     expect(impl.options?.dispose).toBeDefined()
   })
 })
@@ -104,14 +109,14 @@ describe('Layer.factory scope option', () => {
   it('should support transient scope', () => {
     const CacheTag = tag<{ get: (key: string) => unknown }>('Cache')
 
-    const layer = Layer.factory(
+    const cacheLayer = Layer.factory(
       CacheTag,
       [],
       () => ({ get: (key: string) => key }),
       { scope: 'transient' },
     )
 
-    const impl = getLayerImpl(layer)
+    const impl = getLayerImpl(cacheLayer)
     expect(impl.options?.scope).toBe('transient')
   })
 })
