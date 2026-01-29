@@ -159,13 +159,13 @@ const MainLayer = Layer.merge(layers, {
 
 ## Examples
 
-See the [examples](./examples) directory for more usage patterns:
+See the [examples](https://github.com/harryplusplus/unlayer/tree/main/examples) directory for more usage patterns:
 
-- [basic.ts](./examples/basic.ts) - Basic usage
-- [dependency-injection.ts](./examples/dependency-injection.ts) - Dependency injection chains
-- [transient-scope.ts](./examples/transient-scope.ts) - Singleton vs transient scope
-- [resource-disposal.ts](./examples/resource-disposal.ts) - Resource cleanup
-- [layer-composition.ts](./examples/layer-composition.ts) - Layer composition patterns
+- [basic.ts](https://github.com/harryplusplus/unlayer/tree/main/examples/basic.ts) - Basic usage
+- [dependency-injection.ts](https://github.com/harryplusplus/unlayer/tree/main/examples/dependency-injection.ts) - Dependency injection chains
+- [transient-scope.ts](https://github.com/harryplusplus/unlayer/tree/main/examples/transient-scope.ts) - Singleton vs transient scope
+- [resource-disposal.ts](https://github.com/harryplusplus/unlayer/tree/main/examples/resource-disposal.ts) - Resource cleanup
+- [layer-composition.ts](https://github.com/harryplusplus/unlayer/tree/main/examples/layer-composition.ts) - Layer composition patterns
 
 Run examples with:
 ```bash
