@@ -11,6 +11,14 @@
     "layer",
     "type-safe"
   ],
+  "homepage": "https://github.com/harryplusplus/unlayer",
+  "bugs": {
+    "url": "https://github.com/harryplusplus/unlayer/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/harryplusplus/unlayer.git"
+  },
   "license": "MIT",
   "author": {
     "name": "harryplusplus",
