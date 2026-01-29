@@ -1,0 +1,128 @@
+/**
+ * Layer composition example
+ *
+ * Demonstrates:
+ * - Organizing layers by domain/feature
+ * - Reusing layer combinations
+ * - Overriding layers for testing
+ */
+
+import { createContainer, Layer, tag } from '../src/index.ts'
+
+// ============================================
+// Domain Layer: Config
+// ============================================
+interface Config {
+  port: number
+  dbUrl: string
+}
+
+const ConfigTag = tag<Config>('Config')
+
+const ConfigDev = Layer.value(ConfigTag, {
+  port: 3000,
+  dbUrl: 'localhost:5432',
+})
+
+const ConfigProd = Layer.value(ConfigTag, {
+  port: 80,
+  dbUrl: 'prod-db.example.com',
+})
+
+// ============================================
+// Domain Layer: Database
+// ============================================
+interface Database {
+  query(sql: string): Promise<unknown[]>
+}
+
+const DatabaseTag = tag<Database>('Database')
+
+const DatabaseLive = Layer.factory(DatabaseTag, [ConfigTag], (config) => ({
+  query(sql: string) {
+    console.log(`[DB] Connecting to ${config.dbUrl}`)
+    console.log(`[DB] Executing: ${sql}`)
+    return Promise.resolve([])
+  },
+}))
+
+// ============================================
+// Domain Layer: Services
+// ============================================
+interface Logger {
+  log(message: string): void
+}
+
+interface UserService {
+  findUser(id: string): Promise<unknown>
+}
+
+const LoggerTag = tag<Logger>('Logger')
+const UserServiceTag = tag<UserService>('UserService')
+
+const LoggerLive = Layer.value(LoggerTag, {
+  log(message: string) {
+    console.log(`[LOG] ${message}`)
+  },
+})
+
+const UserServiceLive = Layer.factory(
+  UserServiceTag,
+  [DatabaseTag, LoggerTag],
+  (db, logger) => ({
+    findUser(id: string) {
+      logger.log(`Finding user: ${id}`)
+      return db.query(`SELECT * FROM users WHERE id = ${id}`)
+    },
+  }),
+)
+
+// ============================================
+// Layer Composition
+// ============================================
+
+// Compose a base application layer
+const AppBaseLayer = Layer.merge(DatabaseLive, UserServiceLive, LoggerLive)
+
+// Create environment-specific layers
+const DevLayer = Layer.merge(AppBaseLayer, ConfigDev)
+const ProdLayer = Layer.merge(AppBaseLayer, ConfigProd)
+
+// ============================================
+// Usage
+// ============================================
+
+console.log('=== Development Environment ===')
+const devContainer = createContainer(DevLayer)
+const devUserService = devContainer.get(UserServiceTag)
+await devUserService.findUser('1')
+await devContainer.dispose()
+
+console.log('\n=== Production Environment ===')
+const prodContainer = createContainer(ProdLayer)
+const prodUserService = prodContainer.get(UserServiceTag)
+await prodUserService.findUser('1')
+await prodContainer.dispose()
+
+// ============================================
+// Layer Override Example (for testing)
+// ============================================
+
+console.log('\n=== Testing with Mock Database ===')
+
+const MockDatabase = Layer.value(DatabaseTag, {
+  query(sql: string) {
+    console.log(`[MOCK DB] ${sql}`)
+    return Promise.resolve([{ id: '1', name: 'Test User' }])
+  },
+})
+
+// Merge mock with app base (allowDuplicates needed for same tag)
+const TestLayer = Layer.merge([AppBaseLayer, MockDatabase], {
+  allowDuplicates: true,
+})
+
+const testContainer = createContainer(TestLayer)
+const testUserService = testContainer.get(UserServiceTag)
+await testUserService.findUser('1')
+await testContainer.dispose()
